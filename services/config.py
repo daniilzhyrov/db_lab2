@@ -32,3 +32,4 @@ class MessageState:
 
 class Const:
     ADDED_TO_QUEUE_NOTIFICATION = "8"
+    SPAM_DELAY = 1

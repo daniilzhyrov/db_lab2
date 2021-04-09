@@ -1,7 +1,9 @@
-from redis_connection import connection as redis
-from config import UserType, Keys, MessageState, Const
+from services.redis_connection import connection as redis
+from services.config import UserType, Keys, MessageState, Const
 import json
 import time
+import random
+import string
 
 class User:
     def __init__(self, username: str, admin: bool = False):
@@ -9,7 +11,7 @@ class User:
         self.username = username
         self.admin = admin
         redis.set(Keys.USERS_SET + ":" + username, UserType.ADMIN_USER_LABEL if admin else UserType.USER_LABEL)
-        redis.lpush(Keys.ONLINE_USERS, username)
+        redis.sadd(Keys.ONLINE_USERS, username)
         log_mes = "User " + self.username + " logged in at " + time.ctime()
         redis.publish(Keys.LOG_CHANNEL, log_mes)
         redis.lpush(Keys.LOG_LIST, log_mes)
@@ -19,7 +21,7 @@ class User:
         log_mes = "User " + self.username + " logged out at " + time.ctime()
         redis.publish(Keys.LOG_CHANNEL, log_mes)
         redis.lpush(Keys.LOG_LIST, log_mes)
-        redis.lrem(Keys.ONLINE_USERS, 0, self.username)
+        redis.srem(Keys.ONLINE_USERS, self.username)
 
     def __get_new_message_id():
         return redis.incr(Keys.LAST_MESSAGE_ID)
@@ -74,16 +76,33 @@ class User:
     def list_spam_logs(number: int) -> [str]:
         return redis.lrange(Keys.SPAM_LIST, 0, number)
     
-    def list_online(number: int) -> [str]:
-        return redis.lrange(Keys.ONLINE_USERS, 0, number)
+    def list_online() -> [str]:
+        return redis.smembers(Keys.ONLINE_USERS)
     
     def list_active(number: int) -> [str]:
         KEY = "active_set"
         redis.delete(KEY)
-        for username in redis.lrange(Keys.ONLINE_USERS, 0, -1):
+        for username in User.list_online():
             count = redis.llen(Keys.SENT_MESSAGES_LIST + ":" + username)
             redis.zadd(KEY, {username : count})
         return redis.zrevrange(KEY, 0, number)
 
     def list_spammers(number: int) -> [str]:
         return redis.zrevrange(Keys.SPAM_COUNTER, 0, number)
+
+    def get_send_messages_amount_by_status(self):
+        res = {
+            MessageState.CREATED : 0,
+            MessageState.IN_THE_QUEUE : 0,
+            MessageState.SPAM_CHECK: 0,
+            MessageState.BLOCKED: 0,
+            MessageState.SENT : 0,
+            MessageState.DELIVERED : 0
+        }
+        message_ids = message_ids = redis.lrange(Keys.SENT_MESSAGES_LIST + ":" + self.username, 0, -1)
+        for mes_id in message_ids:
+            response = redis.hget(Keys.MESSAGE_HASH + ":" + mes_id, "status")
+            res[response] += 1
+        res["amount"] = len(message_ids)
+        return res
+        

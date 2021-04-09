@@ -1,10 +1,11 @@
 import atexit
 
-import redis_connection as redis
+from services.config import MessageState
+import services.redis_connection as redis
 
 redis.connect()
 
-from user import User
+from services.user import User
 
 current_user = None
 
@@ -77,6 +78,16 @@ while True:
                     print('You should specify the type of messages')
                     continue
                 type = words[2].lower()
+                if type == 'status':
+                    res = current_user.get_send_messages_amount_by_status()
+                    print("Created:", res[MessageState.CREATED])
+                    print("In the queue:", res[MessageState.IN_THE_QUEUE])
+                    print("On spam check:", res[MessageState.SPAM_CHECK])
+                    print("Blocked by spam filter:", res[MessageState.BLOCKED])
+                    print("Sent:", res[MessageState.SENT])
+                    print("Delivered:", res[MessageState.DELIVERED])
+                    print("Messages sent in general:", res["amount"])
+                    continue
                 if type not in 'sent received':
                     print('Type unsupported')
                     continue
@@ -102,6 +113,7 @@ while True:
                     print("SENDER\tCONTENT")
                     for message in messages:
                         print (message["sender"], message["content"], sep="\t")
+                
                 continue
             if not current_user.admin:
                 print("Forbidden")
@@ -128,16 +140,7 @@ while True:
                     print(record)
                 continue
             if subject == 'online':
-                inp = input("Number >> ")
-                number = None
-                try:
-                    number = int(inp)
-                    if number < 1:
-                        raise Exception()
-                except:
-                    print("You should enter a positive number")
-                    continue
-                users = User.list_online(number)
+                users = User.list_online()
                 for record in users:
                     print(record)
                 continue
@@ -174,10 +177,10 @@ while True:
         print("Unsupported command: " + user_input)
     except KeyboardInterrupt:
         break
-    # except Exception as err:
-    #     print(err)
-    #     print("Server is unreachable!")
-    #     break
+    except Exception as err:
+        print(err)
+        print("Server is unreachable!")
+        break
 
         
 

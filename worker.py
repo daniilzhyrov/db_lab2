@@ -2,8 +2,8 @@ import atexit
 import time
 import random
 
-import redis_connection
-from config import Keys, Const, MessageState
+import services.redis_connection
+from services.config import Keys, Const, MessageState
 
 redis_connection.connect()
 redis = redis_connection.connection
@@ -18,7 +18,7 @@ spam_check.subscribe(Keys.NEW_MESSAGES_CHANNEL)
 
 
 def is_spam(message: str) -> bool:
-    time.sleep(1)
+    time.sleep(Const.SPAM_DELAY)
     return bool(random.getrandbits(1))
 
 def process_messages():

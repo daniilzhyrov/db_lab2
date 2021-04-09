@@ -1,7 +1,7 @@
 import redis
 import sys
 
-import config
+import services.config as config
 
 connection = None
 
