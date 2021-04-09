@@ -1,3 +1,3 @@
 # Лабораторна робота 2
 
-## [Звіт](https://drive.google.com/file/d/1qThR6Kb7rUOTJHf97tARhvLqJYQuq0vT/view?usp=sharing)
+## [Звіт](https://drive.google.com/file/d/1v0mqxpdjiBwhiR2iUqNzrbwIrU7KoqT7/view?usp=sharing)
